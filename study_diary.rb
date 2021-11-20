@@ -10,6 +10,8 @@ DELETE = '5'
 MARK_AS_CONCLUDED = '6'
 EXIT = '7'
 
+CONCLUDED = '6.5'
+
 RUBY = 1
 RAILS = 2
 HTML = 3
@@ -45,33 +47,17 @@ def register(items)
 end
 
 def view(items)
-  items.each { |item| puts "#{item.title} - #{item.category.name}" }
+  print_items(items, show_index: false, show_category: true)
 end
 
 def search(items)
   print 'Digite uma palavra para procurar: '
 
-  search_term = gets.chomp
+  found_items = fetch_items(items, mode: SEARCH)
 
-  found_items = []
+  print_results_message(found_items.size, mode: SEARCH)
 
-  items.each do |item|
-    found_items << item if (item.title.downcase.include?(search_term.downcase) ||
-                            item.description.downcase.include?(search_term.downcase))
-  end
-
-    case found_items.size
-  when 0
-    puts '', 'Não foi encontrado nenhum item'
-  when 1
-    puts '', 'Foi encontrado 1 item'
-  else
-    puts '', "Foram encontrados #{found_items.size} itens"
-  end
-
-  found_items.each_index do |index|
-    puts '', "##{index + 1} - #{found_items[index].title} - #{found_items[index].category.name}"
-  end
+  print_items(found_items, show_index: true, show_category: true)
 end
 
 def list_by_category(items)
@@ -79,88 +65,41 @@ def list_by_category(items)
 
   print 'Escolha uma categoria cujos itens de estudo devam ser listados: '
 
-  category_name = fetch_category
+  found_items = fetch_items(items, mode: LIST_BY_CATEGORY, search_term: fetch_category)
 
-  unless category_name
-    category_name = Category.new.name
-    puts ' Serão listados os itens da categoria miscelânea.'
-  end
+  print_results_message(found_items.size, mode: LIST_BY_CATEGORY)
 
-  found_titles = []
-
-  items.each { |item| found_titles << item.title if item.category.name == category_name }
-
-  case found_titles.size
-  when 0
-    puts '', 'Não foi encontrado nenhum item da categoria escolhida', ''
-  when 1
-    puts '', 'Foi encontrado 1 item da categoria escolhida', ''
-  else
-    puts '', "Foram encontrados #{found_titles.size} itens da categoria escolhida", ''
-  end
-
-  found_titles.each_index { |index| puts "##{index + 1} - #{found_titles[index]}" }
+  print_items(found_items, show_index: true, show_category: false)
 end
 
 def delete(items)
   print 'Digite o título dos seus itens de estudo que serão apagados: '
 
-  title_to_delete = gets.chomp
-
-  found_items = []
-
-  items.each { |item| found_items << item if item.title == title_to_delete }
+  found_items = fetch_items(items, mode: DELETE)
 
   found_items.each { |item| items.delete(item) }
 
-  case found_items.size
-  when 0
-    puts '', 'Não foi encontrado nenhum item com o título indicado. Nenhum item apagado.', ''
-  when 1
-    puts '', 'Foi apagado 1 item', ''
-  else
-    puts '', "Foram apagados #{found_items.size} itens", ''
-  end
+  print_results_message(found_items.size, mode: DELETE)
 
-  found_items.each_index do |index|
-    puts "##{index + 1} - #{found_items[index].title} - #{found_items[index].category.name}"
-  end
+  print_items(found_items, show_index: true, show_category: true)
 end
 
 def mark_as_concluded(items, concluded_items)
-  case concluded_items.size
-  when 0
-    puts 'Não há atualmente nenhum item marcado como concluído', ''
-  when 1
-    puts 'Há atualmente um total de 1 item marcado como concluído', ''
-  else
-    puts "Há atualmente um total de #{concluded_items.size} itens marcados como concluídos", ''
-  end
+  print_results_message(concluded_items.size, mode: CONCLUDED)
 
-  concluded_items.each { |item| puts item.title }
+  print_items(concluded_items, show_index: true, show_category: true)
 
   print 'Digite o título dos seus itens de estudo que serão marcados como concluídos: '
 
-  title_done = gets.chomp
-
-  found_items = []
-
-  items.each { |item| found_items << item if item.title == title_done }
+  found_items = fetch_items(items, mode: MARK_AS_CONCLUDED)
 
   concluded_items.concat(found_items)
 
   found_items.each { |item| items.delete(item) }
 
-  case found_items.size
-  when 0
-    puts '', 'Não foi encontrado nenhum item com o título indicado'
-  when 1
-    puts '', 'Foi encontrado e marcado como concluído 1 item'
-  else
-    puts '', "Foram encontrados e marcados como concluídos #{concluded_items.size} itens"
-  end
+  print_results_message(found_items.size, mode: MARK_AS_CONCLUDED)
 
-  found_items.each { |item| puts item.title }
+  print_items(found_items, show_index: true, show_category: true)
 end
 
 def exit(items, concluded_items)
@@ -192,10 +131,102 @@ def exit(items, concluded_items)
   puts 'Obrigado por usar o Diário de Estudos', ''
 end
 
+def clear_terminal
+  STDOUT.clear_screen
+end
+
+def print_categories
+  puts <<~CATEGORIES
+    ##{RUBY} - Ruby
+    ##{RAILS} - Rails
+    ##{HTML} - HTML
+  CATEGORIES
+end
+
+def fetch_category
+  option = gets.chomp
+
+  category_name = case option.to_i
+                  when RUBY
+                    'Ruby'
+                  when RAILS
+                    'Rails'
+                  when HTML
+                    'HTML'
+                  else
+                    puts 'Opção inválida. Serão listados os itens da categoria miscelânea.'
+                  end
+
+  category_name ||= Category.new.name
+end
+
+def fetch_items(items, mode:, search_term: nil)
+  search_term ||= gets.chomp
+
+  case mode
+  when SEARCH
+    items.select do |item|
+      (item.title.downcase.include?(search_term.downcase) ||
+       item.description.downcase.include?(search_term.downcase))
+    end
+  when LIST_BY_CATEGORY
+    items.select { |item| item.category.name == search_term }
+  when DELETE, MARK_AS_CONCLUDED
+    items.select { |item| item.title == search_term }
+  else []
+  end
+end
+
+def print_items(items, show_index:, show_category:)
+  items.each_index do |index|
+    print "##{index + 1} - " if show_index
+    print "#{items[index].title}"
+    print " - #{items[index].category.name}" if show_category
+    puts ''
+  end
+end
+
+def print_results_message(size, mode:)
+  puts '', case mode
+           when SEARCH
+             case size
+             when 0 then 'Não foi encontrado nenhum item'
+             when 1 then 'Foi encontrado 1 item'
+             else "Foram encontrados #{size} itens"
+             end
+           when LIST_BY_CATEGORY
+             case size
+             when 0 then 'Não foi encontrado nenhum item da categoria escolhida'
+             when 1 then 'Foi encontrado 1 item da categoria escolhida'
+             else "Foram encontrados #{size} itens da categoria escolhida"
+             end
+           when DELETE
+             case size
+             when 0 then 'Não foi encontrado nenhum item com o título indicado. Nenhum item apagado.'
+             when 1 then 'Foi apagado 1 item'
+             else "Foram apagados #{size} itens"
+             end
+           when CONCLUDED
+             case size
+             when 0 then 'Não há atualmente nenhum item marcado como concluído'
+             when 1 then 'Há atualmente um total de 1 item marcado como concluído'
+             else "Há atualmente um total de #{size} itens marcados como concluídos"
+             end
+           when MARK_AS_CONCLUDED
+             case size
+             when 0 then 'Não foi encontrado nenhum item com o título indicado'
+             when 1 then 'Foi encontrado e marcado como concluído 1 item'
+             else "Foram encontrados e marcados como concluídos #{size} itens"
+             end
+           else ''
+           end
+
+  puts '' unless size == 0
+end
+
 items = []
 concluded_items = []
 
-# nao precisa fechar se so ler?
 if File.exist?(STORED_SESSION)
   data = File.read(STORED_SESSION)
 
@@ -214,33 +245,6 @@ if File.exist?(STORED_SESSION)
     concluded_items << StudyItem.new(title: attributes.lines(chomp: true).first,
                                      description: attributes.lines(chomp: true)[1],
                                      category: Category.new(name: attributes.lines(chomp: true)[2]))
-  end
-end
-
-def clear_terminal
-  print RUBY_PLATFORM.include?('windows') ? `cls` : `clear`
-end
-
-def print_categories
-  puts <<~CATEGORIES
-    ##{RUBY} - Ruby
-    ##{RAILS} - Rails
-    ##{HTML} - HTML
-  CATEGORIES
-end
-
-def fetch_category
-  option = gets.chomp
-
-  case option.to_i
-  when RUBY
-    'Ruby'
-  when RAILS
-    'Rails'
-  when HTML
-    'HTML'
-  else
-    print 'Opção inválida.'
   end
 end
 

@@ -22,5 +22,5 @@ Itens com o título indicado serão apagados. O programa não apaga itens que j�
 
 Compatibilidade:
 Testado em ambiente GNU/Linux.
-Atualmente não é compatível com ambientes Windows.
+
 *projeto em evolução contínua*
