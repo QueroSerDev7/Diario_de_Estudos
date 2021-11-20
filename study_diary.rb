@@ -1,51 +1,43 @@
 require 'io/console'
-require_relative 'category'
-require_relative 'study_item'
+require_relative 'lib/category'
+require_relative 'lib/study_item'
 
 REGISTER = '1'
 VIEW = '2'
 SEARCH = '3'
 LIST_BY_CATEGORY = '4'
 DELETE = '5'
-DESCRIPTION = '6'
-MARK_AS_CONCLUDED = '7'
-EXIT = '8'
+MARK_AS_CONCLUDED = '6'
+EXIT = '7'
 
 RUBY = 1
 RAILS = 2
 HTML = 3
 
 ITEM_DELIMITER = "\n---\n"
+CONCLUDED_DELIMITER = "\n===\n"
+
+STORED_SESSION = 'lib/study_diary.txt'
 
 def register(items)
   print 'Digite o título do seu item de estudo: '
   title = gets.chomp
 
-  print 'Dê uma descrição ao item: '
+  print 'Dê uma descrição ao seu item de estudo: '
   description = gets.chomp
 
-  puts <<~CATEGORIES
-  #1 - Ruby
-  #2 - Rails
-  #3 - HTML
-  CATEGORIES
+  print_categories
 
   print 'Escolha uma categoria para o seu item de estudo: '
 
-  option = gets
+  category_name = fetch_category
 
-  category_name = case option.to_i
-                  when RUBY
-                    'Ruby'
-                  when RAILS
-                    'Rails'
-                  when HTML
-                    'HTML'
-                  else
-                    puts 'Opção inválida. Foi atribuída a categoria miscelânea.'  # talvez fazer um loop
-                  end
-
-  category = category_name ? Category.new(name: category_name) : Category.new
+  category = if (category_name)
+               Category.new(name: category_name)
+             else
+               puts ' Será atribuída a categoria miscelânea.'
+               Category.new
+             end
 
   items << StudyItem.new(title: title, description: description, category: category)
 
@@ -64,46 +56,54 @@ def search(items)
   found_items = []
 
   items.each do |item|
-    found_items << item if item.title.downcase.include?(search_term.downcase)
+    found_items << item if (item.title.downcase.include?(search_term.downcase) ||
+                            item.description.downcase.include?(search_term.downcase))
   end
 
     case found_items.size
   when 0
-    puts "\n", 'nenhum item encontrado'
+    puts '', 'Não foi encontrado nenhum item'
   when 1
-    puts "\n", 'Foi encontrado 1 item'
+    puts '', 'Foi encontrado 1 item'
   else
-    puts "\n", "Foram encontrados #{found_items.size} itens"
+    puts '', "Foram encontrados #{found_items.size} itens"
   end
 
   found_items.each_index do |index|
-    puts "\n", "##{index + 1} - #{found_items[index].title} - #{found_items[index].category.name}"
+    puts '', "##{index + 1} - #{found_items[index].title} - #{found_items[index].category.name}"
   end
 end
 
 def list_by_category(items)
-  print 'indique a categoria cujos itens devem ser listados: '
+  print_categories
 
-  target_category = gets.chomp
+  print 'Escolha uma categoria cujos itens de estudo devam ser listados: '
+
+  category_name = fetch_category
+
+  unless category_name
+    category_name = Category.new.name
+    puts ' Serão listados os itens da categoria miscelânea.'
+  end
 
   found_titles = []
 
-  items.each { |item| found_titles << item.title if item.category.name == target_category }
+  items.each { |item| found_titles << item.title if item.category.name == category_name }
 
   case found_titles.size
   when 0
-    puts "", 'nenhum item da categoria indicada encontrado'
+    puts '', 'Não foi encontrado nenhum item da categoria escolhida', ''
   when 1
-    puts "", 'item da categoria indicada encontrado:'
+    puts '', 'Foi encontrado 1 item da categoria escolhida', ''
   else
-    puts "", 'itens da categoria indicada encontrados:'
+    puts '', "Foram encontrados #{found_titles.size} itens da categoria escolhida", ''
   end
 
-  puts found_titles
+  found_titles.each_index { |index| puts "##{index + 1} - #{found_titles[index]}" }
 end
 
 def delete(items)
-  print 'indique o título dos itens que serão apagados: '
+  print 'Digite o título dos seus itens de estudo que serão apagados: '
 
   title_to_delete = gets.chomp
 
@@ -115,52 +115,31 @@ def delete(items)
 
   case found_items.size
   when 0
-    puts "", 'Nenhum item com o título indicado encontrado. Nenhum item apagado.'
+    puts '', 'Não foi encontrado nenhum item com o título indicado. Nenhum item apagado.', ''
   when 1
-    puts "", '1 item apagado'
+    puts '', 'Foi apagado 1 item', ''
   else
-    puts "", "#{found_items.size} itens apagados"
-  end
-end
-
-def search_in_title_and_description(items)
-  print 'indique por qual termo buscar: '
-
-  search_term = gets.chomp
-
-  found_titles = []
-
-  items.each do |item|
-    if ((item.title.include?(search_term)) || (item.description.include?(search_term)))
-      found_titles << item.title
-    end
+    puts '', "Foram apagados #{found_items.size} itens", ''
   end
 
-  case found_titles.size
-  when 0
-    puts "", 'nenhum item encontrado'
-  when 1
-    puts "", 'item encontrado:'
-  else
-    puts "", 'itens encontrados:'
+  found_items.each_index do |index|
+    puts "##{index + 1} - #{found_items[index].title} - #{found_items[index].category.name}"
   end
-
-  puts found_titles
 end
 
 def mark_as_concluded(items, concluded_items)
   case concluded_items.size
   when 0
-    puts "não há atualmente nenhum item marcado como concluído\n"
+    puts 'Não há atualmente nenhum item marcado como concluído', ''
   when 1
-    puts "há atualmente um total de 1 item marcado como concluído:\n"
+    puts 'Há atualmente um total de 1 item marcado como concluído', ''
   else
-    puts "há atualmente um total de #{concluded_items.size} itens marcados como concluídos:\n"
+    puts "Há atualmente um total de #{concluded_items.size} itens marcados como concluídos", ''
   end
 
   concluded_items.each { |item| puts item.title }
 
-  print 'indique o título dos itens que serão marcados como concluídos: '
+  print 'Digite o título dos seus itens de estudo que serão marcados como concluídos: '
 
   title_done = gets.chomp
 
@@ -174,65 +153,110 @@ def mark_as_concluded(items, concluded_items)
 
   case found_items.size
   when 0
-    puts "\nNenhum item com o título indicado encontrado."
+    puts '', 'Não foi encontrado nenhum item com o título indicado'
   when 1
-    puts "\n1 item encontrado e marcado como concluído:"
+    puts '', 'Foi encontrado e marcado como concluído 1 item'
   else
-    puts "\n#{concluded_items.size} itens encontrados e marcados como concluídos:"
+    puts '', "Foram encontrados e marcados como concluídos #{concluded_items.size} itens"
   end
 
   found_items.each { |item| puts item.title }
 end
 
 def exit(items, concluded_items)
-  puts 'por favor pressione a tecla s para salvar a sessão (a sessão anterior, caso exista, será perdida),'\
-        'ou pressione outra tecla para sair'
+  puts 'Por favor pressione a tecla s para salvar a sessão (a sessão anterior, caso exista, será perdida), '\
+       'ou pressione outra tecla para sair.'
 
-  if (STDIN.getch == 's')  #fazer um case talvez
-    # salvar em um arquivo/banco de dados; talvez fazer um arquivo de backup e depois deletalo
-    file = File.open("study_diary.txt", "w") # ver se quando open pra montar items ja nao pe suficiente (talvez nao porque toda vez o arquivo tem que ser zerado; ver outros atubutos tipo r
+  if (STDIN.getch == 's')
+    # salvar em um arquivo/banco de dados
+    file = File.new('.file_to_manipulate', 'w')
 
     items.each do |item|
       file.write("#{item.title}\n#{item.description}\n#{item.category.name}#{ITEM_DELIMITER}")
     end
 
+    file.write(CONCLUDED_DELIMITER)
+
+    concluded_items.each do |item|
+      file.write("#{item.title}\n#{item.description}\n#{item.category.name}#{ITEM_DELIMITER}")
+    end
+
+    #poderia salvar as sessoes
+    File.rename(file, STORED_SESSION)
+
     file.close
+
+    puts 'Sessão salva com sucesso'
   end
 
-  puts 'Obrigado por usar o Diário de Estudos', "\n"
+  puts 'Obrigado por usar o Diário de Estudos', ''
 end
 
 items = []
 concluded_items = []
 
-#acho que vai ter que abrir a stringona e manusear para separa o que é de items e o que é de concluded items
-# data = open("study diary.txt").read.lines("\n---\n", chomp: true) # with no block open is a synonim for new
+# nao precisa fechar se so ler?
+if File.exist?(STORED_SESSION)
+  data = File.read(STORED_SESSION)
 
-if File.exist?("study_diary.txt")
-  file = File.open("study_diary.txt")
+  # string_of_items, string_of_concluded_items = data.scan(/([\s\S]*) === ([\S\s]*)/).flatten
+  string_of_items, string_of_concluded_items = data.split(CONCLUDED_DELIMITER)
+  string_of_items ||= ''
+  string_of_concluded_items ||= ''
 
-  file.each(ITEM_DELIMITER) do |attributes|
+  string_of_items.split(ITEM_DELIMITER) do |attributes|
     items << StudyItem.new(title: attributes.lines(chomp: true).first,
                            description: attributes.lines(chomp: true)[1],
                            category: Category.new(name: attributes.lines(chomp: true)[2]))
   end
 
-  file.close
+  string_of_concluded_items.split(ITEM_DELIMITER) do |attributes|
+    concluded_items << StudyItem.new(title: attributes.lines(chomp: true).first,
+                                     description: attributes.lines(chomp: true)[1],
+                                     category: Category.new(name: attributes.lines(chomp: true)[2]))
+  end
 end
 
-print `clear`
+def clear_terminal
+  print RUBY_PLATFORM.include?('windows') ? `cls` : `clear`
+end
+
+def print_categories
+  puts <<~CATEGORIES
+    ##{RUBY} - Ruby
+    ##{RAILS} - Rails
+    ##{HTML} - HTML
+  CATEGORIES
+end
+
+def fetch_category
+  option = gets.chomp
+
+  case option.to_i
+  when RUBY
+    'Ruby'
+  when RAILS
+    'Rails'
+  when HTML
+    'HTML'
+  else
+    print 'Opção inválida.'
+  end
+end
+
+clear_terminal
+
 puts "Bem-vindo ao Diário de Estudos, seu companheiro para estudar!"
 
 loop do
   puts <<~MENU
-  [#{REGISTER}] Cadastrar um item para estudar
-  [#{VIEW}] Ver todos os itens cadastrados
-  [#{SEARCH}] Buscar um item de estudo
-  [#{LIST_BY_CATEGORY}] Listar por categoria
-  [#{DELETE}] Apagar um item
-  [#{DESCRIPTION}] Descrição de um item e pesquisa
-  [#{MARK_AS_CONCLUDED}] Marcar um item como concluído
-  [#{EXIT}] Sair
+    [#{REGISTER}] Cadastrar um item para estudar
+    [#{VIEW}] Ver todos os itens cadastrados
+    [#{SEARCH}] Buscar um item de estudo
+    [#{LIST_BY_CATEGORY}] Listar por categoria
+    [#{DELETE}] Apagar um item
+    [#{MARK_AS_CONCLUDED}] Marcar um item como concluído
+    [#{EXIT}] Sair
   MENU
 
   print 'Escolha uma opção: '
@@ -250,20 +274,18 @@ loop do
     list_by_category(items)
   when DELETE
     delete(items)
-  when DESCRIPTION
-    search_in_title_and_description(items)
   when MARK_AS_CONCLUDED
     mark_as_concluded(items, concluded_items)
   when EXIT
     exit(items, concluded_items)
     break
   else
-    puts 'opção inválida'
+    puts 'Opção inválida'
   end
 
-  puts "\n", 'Pressione qualquer tecla para continuar'
+  puts '', 'Pressione qualquer tecla para continuar'
 
   STDIN.getch
 
-  print `clear`
+  clear_terminal
 end

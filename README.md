@@ -4,7 +4,7 @@ Projeto do Projeto Seletivo Quero Ser Dev da Locaweb.
 Opções
 
 - Cadastrar um item para estudar
-O programa permite que sejam cadastrados itens diferentes que tenham o mesmo título, por exemplo, podem ser cadastrados os itens "Sintaxe" da categoria Ruby, e "Sintaxe" da categoria HTML.
+O programa permite que sejam cadastrados itens diferentes que tenham o mesmo título; por exemplo, podem ser cadastrados os itens "Sintaxe" da categoria Ruby, e "Sintaxe" da categoria HTML.
 
 - Ver todos os itens cadastrados
 
@@ -14,10 +14,13 @@ O programa permite que sejam cadastrados itens diferentes que tenham o mesmo tí
 
 - Apagar um item
 
-- Descrição de um item e pesquisa
+Itens com o título indicado serão apagados. O programa não apaga itens que já foram concluídos.
 
 - Marcar um item como concluído
 
 - Sair
 
+Compatibilidade:
+Testado em ambiente GNU/Linux.
+Atualmente não é compatível com ambientes Windows.
 *projeto em evolução contínua*
