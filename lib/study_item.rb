@@ -1,5 +1,5 @@
 class StudyItem
-  attr_reader :title, :description, :category_name, :is_concluded
+  attr_reader :title, :description, :category, :is_concluded
 
   def self.register
     print 'Digite o título do seu item de estudo: '
@@ -13,22 +13,23 @@ class StudyItem
 
     category_name = Category.fetch_category
 
-    unless category_name
-      puts " Será atribuída a categoria 'miscelânea'."
-
-      category_name = 'miscelânea'
-    end
+    category = if category_name
+                 Category.new(name:category_name)
+               else
+                 puts "Opção inválida. Será atribuída a categoria '#{Category.new.name}'."
+                 Category.new
+               end
 
     print 'Dê uma descrição ao seu item de estudo (opcional): '
     description = gets.chomp
 
-    new_item = StudyItem.new(title: title, description: description, category_name: category_name)
+    new_item = StudyItem.new(title: title, description: description, category: category)
 
-    TableFile.save_to_db(new_item)
+    TableFile.update_db(mode: REGISTER, item: new_item)
 
     # new_item = db.execute 'SELECT * FROM items ORDER BY rowid DESC LIMIT 1;'
-    # ver o que pode/precis mudar aqui na query acima
-    print "Item '#{new_item.title}' da categoria '#{new_item.category_name}' "
+    # ver o que pode/precisa mudar aqui na query acima
+    print "Item '#{new_item.title}' da categoria '#{new_item.category.name}' "
     print "com a descrição '#{new_item.description}' " if new_item.description?
     puts 'cadastrado com sucesso!'
   end
@@ -46,7 +47,6 @@ class StudyItem
     found_items = TableFile.find_by_mode(search_term.downcase, mode: SEARCH)
 
     print_results_message(found_items.size, mode: SEARCH)
-
     print_items(found_items, show_index: true, show_category: true, show_description: true)
   end
 
@@ -58,14 +58,14 @@ class StudyItem
     search_term = Category.fetch_category
 
     unless search_term
-      search_term = 'miscelânea'  #se realmente nao for usar class Category pode simplificar acho
-      puts " Serão listados os itens da categoria 'miscelânea'."
+      puts "Opção inválida. Serão listados os itens da categoria '#{Category.new.name}'."
+
+      search_term = Category.new.name
     end
 
     found_items = TableFile.find_by_mode(search_term, mode: LIST_BY_CATEGORY)
 
     print_results_message(found_items.size, mode: LIST_BY_CATEGORY)
-
     print_items(found_items, show_index: true, show_category: false, show_description: true)
   end
 
@@ -75,14 +75,9 @@ class StudyItem
 
     found_items = TableFile.find_by_mode(title, mode: DELETE)
 
-    db = SQLite3::Database.open STORED_SESSION_PATH
-
-    db.execute "DELETE FROM items where title = '#{title}'"
-
-    db.close
+    TableFile.update_db(mode: DELETE, title: title)
 
     print_results_message(found_items.size, mode: DELETE)
-
     print_items(found_items, show_index: true, show_category: true, show_description: true)
   end
 
@@ -90,16 +85,11 @@ class StudyItem
     print 'Digite o título dos seus itens de estudo que serão marcados como concluídos: '
     title = gets.chomp
 
-    found_items = TableFile.find_by_mode(title, mode: DELETE)
+    found_items = TableFile.find_by_mode(title, mode: MARK_AS_CONCLUDED)
 
-    db = SQLite3::Database.open STORED_SESSION_PATH
-
-    db.execute "UPDATE items SET is_concluded = '#{true}' where title='#{title}'"
-
-    db.close
+    TableFile.update_db(mode: MARK_AS_CONCLUDED, title: title)
 
     print_results_message(found_items.size, mode: MARK_AS_CONCLUDED)
-
     print_items(found_items, show_index: true, show_category: true, show_description: true)
   end
 
@@ -107,14 +97,23 @@ class StudyItem
     items = TableFile.find_by_mode(mode: VIEW_CONCLUDED)
 
     print_results_message(items.size, mode: VIEW_CONCLUDED)
-
     print_items(items, show_index: true, show_category: true, show_description: true)
   end
 
-  def initialize(title:, description:, category_name: 'miscelânea', is_concluded: false)
+  def self.print_items(items, show_index:, show_description:, show_category:)
+    items.each_index do |index|
+      print "##{index + 1} - " if show_index
+      print "#{items[index].title}"
+      print " - #{items[index].category.name}" if show_category
+      print " - #{items[index].description}" if show_description && items[index].description?
+      puts ''
+    end
+  end
+
+  def initialize(title:, description:, category: Category.new, is_concluded: false)
     @title = title
     @description = description
-    @category_name = category_name
+    @category = category
     @is_concluded = is_concluded
   end
 

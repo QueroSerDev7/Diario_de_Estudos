@@ -36,14 +36,4 @@ module StudyDiaryMethods
 
     puts '' unless size == 0
   end
-
-  def print_items(items, show_index:, show_description:, show_category:)
-    items.each_index do |index|
-      print "##{index + 1} - " if show_index
-      print "#{items[index].title}"
-      print " - #{items[index].category_name}" if show_category
-      print " - #{items[index].description}" if show_description && items[index].description?
-      puts ''
-    end
-  end
 end
