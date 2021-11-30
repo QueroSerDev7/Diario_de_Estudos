@@ -9,9 +9,9 @@ module StudyDiaryMethods
                end
              when LIST_BY_CATEGORY
                case size
-               when 0 then 'Não foi encontrado nenhum item da categoria escolhida'
-               when 1 then 'Foi encontrado 1 item da categoria escolhida'
-               else "Foram encontrados #{size} itens da categoria escolhida"
+               when 0 then 'Não foi encontrado nenhum item'
+               when 1 then 'Foi encontrado 1 item'
+               else "Foram encontrados #{size} itens"
                end
              when DELETE
                case size
@@ -35,5 +35,19 @@ module StudyDiaryMethods
              end
 
     puts '' unless size == 0
+  end
+
+  def boolean?(variable)
+    variable == !!variable
+  end
+
+  def any_key_to_continue
+    puts '', 'Pressione qualquer tecla para continuar'
+
+    $stdin.getch(intr: true)
+
+    # Gets will absorb extraneous characters coming from getch, if any.
+    # It occurs for example when the user presses the Page Up key, or the arrow keys.
+    $stdin.raw(min: 0, time: 0.001, intr: true) { gets }
   end
 end

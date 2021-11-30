@@ -1,5 +1,9 @@
+require_relative 'category'
+
 class StudyItem
-  attr_reader :title, :description, :category, :is_concluded
+  @@next_index_id = 1
+
+  attr_reader :title, :description, :category, :is_concluded, :concluded_at, :registered_at, :index_id
 
   def self.register
     print 'Digite o título do seu item de estudo: '
@@ -25,7 +29,9 @@ class StudyItem
 
     new_item = StudyItem.new(title: title, description: description, category: category)
 
-    TableFile.update_db(mode: REGISTER, item: new_item)
+    registered_successfully = TableFile.update_db(mode: REGISTER, item: new_item)
+
+    return unless registered_successfully
 
     # new_item = db.execute 'SELECT * FROM items ORDER BY rowid DESC LIMIT 1;'
     # ver o que pode/precisa mudar aqui na query acima
@@ -41,8 +47,10 @@ class StudyItem
   end
 
   def self.search
-    print 'Digite uma palavra para procurar: '
+    print 'Digite um termo para procurar: '
     search_term = gets.chomp
+
+    return puts 'O termo de busca não pode ser vazio. Por favor tente novamente.' if search_term.empty?
 
     found_items = TableFile.find_by_mode(search_term.downcase, mode: SEARCH)
 
@@ -100,6 +108,25 @@ class StudyItem
     print_items(items, show_index: true, show_category: true, show_description: true)
   end
 
+  def initialize(title:, description:, category: Category.new, is_concluded: false,
+                 concluded_at: nil, registered_at: Time.now.floor, index_id: @@next_index_id)
+    @title = title
+    @description = description
+    @category = category
+    @is_concluded = is_concluded
+    @registered_at = registered_at
+    @concluded_at = concluded_at
+    @index_id = index_id
+
+    @@next_index_id += 1
+  end
+
+  def description?
+    !@description.empty?
+  end
+
+  private
+
   def self.print_items(items, show_index:, show_description:, show_category:)
     items.each_index do |index|
       print "##{index + 1} - " if show_index
@@ -108,16 +135,5 @@ class StudyItem
       print " - #{items[index].description}" if show_description && items[index].description?
       puts ''
     end
-  end
-
-  def initialize(title:, description:, category: Category.new, is_concluded: false)
-    @title = title
-    @description = description
-    @category = category
-    @is_concluded = is_concluded
-  end
-
-  def description?
-    !@description.empty?
   end
 end

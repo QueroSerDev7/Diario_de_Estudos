@@ -1,5 +1,5 @@
 class Category
-  CATEGORIES = ['Ruby', 'Rails', 'HTML']
+  CATEGORIES = %w[Ruby Rails HTML]
 
   attr_reader :name
 
@@ -8,9 +8,11 @@ class Category
   end
 
   def self.fetch_category
-    option = gets.chomp.to_i
+    option = gets.chomp
 
-    (1..CATEGORIES.size).include?(option) ? CATEGORIES[option - 1] : nil
+    return nil unless ((1..OPTIONS_MENU.size).include?(option.to_i) && option == option.to_i.to_s)
+
+    CATEGORIES[option.to_i - 1]
   end
 
   def initialize(name: 'miscelânea')

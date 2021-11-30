@@ -7,30 +7,4 @@ puts '== instalando dependências =='
 system('gem install bundler --conservative')
 system('bundle check') || system('bundle install')
 
-print 'Deseja criar um atalho na área de trabalho? [s/n] '
-
-create_shortcut = gets.downcase.chomp
-
-# talvez colocar isso no programa
-if (create_shortcut == 's') || (create_shortcut == 'sim') ||
-   (create_shortcut == 'y') || (create_shortcut == 'yes')
-
-  file = File.new("#{Dir.home}/Área de Trabalho/.desktop", 'w')
-
-  file.write(<<~SHORTCUT)
-  [Desktop Entry]
-  Version = 0.9
-  Name = Diário de Estudos
-  Comment = Projeto da etapa de aquecimento do programa QSD2021
-  Exec = #{Dir.pwd}/study_diary
-  Icon = #{Dir.pwd}/icon.png
-  Terminal = true
-  Type = Application
-  SHORTCUT
-
-  file.chmod(0744)
-
-  puts 'Atalho criado. Pode ser necessário clicar com o botão direito do mouse e '\
-       'selecionar "Permitir iniciar" ou algo semelhante.'
-
-end
+puts 'Tudo pronto. O programa pode ser executado.'
