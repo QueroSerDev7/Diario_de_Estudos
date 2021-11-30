@@ -4,7 +4,7 @@ Projeto da etapa de aquecimento do processo seletivo Quero Ser Dev 2021, da Loca
 ## Antes de iniciar
 Para executar o código, é necessário um interpretador de Ruby (vide seção compatibilidade para detalhes).
 
-Em ambientes Unix-like, antes de executar o programa pela primeira vez, execute o arquivo `setup`, localizado dentro do diretório `bin`. Ele instalará as dependências necessárias, caso ainda não estejam instaladas. A senha de superusuário pode ser requisitada. Este programa utiliza a [gem SQLite 3/Ruby] (https://github.com/sparklemotion/sqlite3-ruby).
+Em ambientes Unix-like, antes de executar o programa pela primeira vez, execute o arquivo `setup`, localizado dentro do diretório `bin`. Ele instalará as dependências necessárias, caso ainda não estejam instaladas. A senha de superusuário pode ser requisitada. Este programa utiliza a [gem SQLite 3/Ruby](https://github.com/sparklemotion/sqlite3-ruby).
 
 `$ bin/setup`
 
